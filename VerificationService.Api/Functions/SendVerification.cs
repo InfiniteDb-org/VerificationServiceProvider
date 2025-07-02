@@ -37,9 +37,11 @@ public class SendVerification(ILogger<SendVerification> logger, VerificationServ
 
             // Generate verification code
             var emailRequest = await _verificationService.GenerateVerificationCode(request.Email);
+            _logger.LogInformation("Generated EmailRequest for {Email}: code={Code}", request.Email, emailRequest.Code); // Debug: log code passed to event
             
             // Extract code and create event for EmailService
             var code = ExtractCodeFromEmailRequest(emailRequest);
+            _logger.LogInformation("Extracted code from EmailRequest for {Email}: code={Code}", request.Email, code); // Debug: log extracted code
             var verificationCodeSentEvent = new VerificationCodeSentEvent
             {
                 Email = request.Email,

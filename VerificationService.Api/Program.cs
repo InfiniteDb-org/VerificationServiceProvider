@@ -27,18 +27,66 @@ builder.Services.AddSingleton(_ => new EmailClient(acsConnectionString));
 builder.Services.AddSingleton(_ => new ServiceBusClient(asbConnectionString));
 builder.Services.AddSingleton<VerificationService.Api.Services.VerificationService>();
 
-builder.Services.AddStackExchangeRedisCache(options =>
+// Try to configure Redis, but don't fail if it doesn't work
+try
 {
-    options.Configuration = builder.Configuration["Redis:Configuration"];
-});
-
-builder.Services.AddHybridCache(options =>
-{
-    options.DefaultEntryOptions = new HybridCacheEntryOptions
+    var redisConfig = Environment.GetEnvironmentVariable("Redis__Configuration") 
+                      ?? builder.Configuration["Redis__Configuration"];
+    
+    Console.WriteLine($"[DEBUG] Redis config from env: '{Environment.GetEnvironmentVariable("Redis__Configuration")}'");
+    Console.WriteLine($"[DEBUG] Redis config from builder: '{builder.Configuration["Redis__Configuration"]}'");
+    Console.WriteLine($"[DEBUG] Final Redis config: '{redisConfig}'");
+    
+    if (!string.IsNullOrEmpty(redisConfig))
     {
-        Expiration = TimeSpan.FromMinutes(5),
-        LocalCacheExpiration = TimeSpan.FromMinutes(5)
-    };
-});
+        Console.WriteLine("[INFO] Attempting to configure Redis cache...");
+        
+        builder.Services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = redisConfig;
+        });
+
+        builder.Services.AddHybridCache(options =>
+        {
+            options.DefaultEntryOptions = new HybridCacheEntryOptions
+            {
+                Expiration = TimeSpan.FromMinutes(5),
+                LocalCacheExpiration = TimeSpan.FromMinutes(5)
+            };
+        });
+        
+        Console.WriteLine("[INFO] Redis cache configuration added successfully.");
+    }
+    else
+    {
+        Console.WriteLine("[WARNING] Redis configuration not found. Using in-memory cache only.");
+        AddInMemoryCache(builder.Services);
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"[WARNING] Failed to configure Redis: {ex.Message}. Using in-memory cache only.");
+    AddInMemoryCache(builder.Services);
+}
 
 builder.Build().Run();
+
+static void AddInMemoryCache(IServiceCollection services)
+{
+    Console.WriteLine("[INFO] Configuring in-memory cache as fallback...");
+    
+    // Add in-memory cache as fallback
+    services.AddMemoryCache();
+    
+    // Add HybridCache without Redis backend (will use only in-memory)
+    services.AddHybridCache(options =>
+    {
+        options.DefaultEntryOptions = new HybridCacheEntryOptions
+        {
+            Expiration = TimeSpan.FromMinutes(5),
+            LocalCacheExpiration = TimeSpan.FromMinutes(5)
+        };
+    });
+    
+    Console.WriteLine("[INFO] In-memory cache configured successfully.");
+}

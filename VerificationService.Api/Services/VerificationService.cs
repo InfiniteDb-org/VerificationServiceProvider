@@ -16,6 +16,7 @@ public class VerificationService(HybridCache cache, ILogger<VerificationService>
     public async Task<EmailRequest> GenerateVerificationCode(string email, CancellationToken cancellationToken = default)
     {
         var code = GenerateCode();
+        _logger.LogInformation("Generated verification code for {Email}: {Code}", email, code); // Debug: log generated code
         await _cache.SetAsync(
             $"email-verification:{email}",
             code,
@@ -40,7 +41,7 @@ public class VerificationService(HybridCache cache, ILogger<VerificationService>
         var attemptsKey = $"attempts:{email}";
         var attempts = await _cache.GetOrCreateAsync(
             attemptsKey,
-            cancel => ValueTask.FromResult(0),
+            _ => ValueTask.FromResult(0),
             cancellationToken: cancellationToken
         );
         if (attempts >= MaxAttempts)
@@ -51,10 +52,10 @@ public class VerificationService(HybridCache cache, ILogger<VerificationService>
 
         var storedCode = await _cache.GetOrCreateAsync(
             $"email-verification:{email}",
-            cancel => ValueTask.FromResult((int?)null),
+            _ => ValueTask.FromResult((int?)null),
             cancellationToken: cancellationToken
         );
-        if (storedCode.HasValue && storedCode.Value == code)
+        if (storedCode == code)
         {
             await _cache.RemoveAsync($"email-verification:{email}", cancellationToken);
             await _cache.RemoveAsync(attemptsKey, cancellationToken);
