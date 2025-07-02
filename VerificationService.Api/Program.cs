@@ -24,7 +24,6 @@ builder.Services.AddSingleton(_ => new EmailClient(acsConnectionString));
 builder.Services.AddSingleton(_ => new ServiceBusClient(asbConnectionString));
 builder.Services.AddSingleton<VerificationService.Api.Services.VerificationService>();
 
-// Skapa logger (efter att DI är satt upp)
 using var loggerFactory = LoggerFactory.Create(logging => logging.AddConsole());
 var logger = loggerFactory.CreateLogger("CacheConfigurator");
 

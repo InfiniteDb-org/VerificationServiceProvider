@@ -22,30 +22,32 @@ public class VerificationService(HybridCache cache, ILogger<VerificationService>
         if (string.IsNullOrWhiteSpace(email))
             throw new ArgumentException("Email cannot be null or empty", nameof(email));
 
+        var normalizedEmail = email.Trim().ToLowerInvariant();
         var code = GenerateCode();
-        _logger.LogInformation("Generated verification code for {Email}: {Code}", email, code);
-        
+        var cacheKey = $"email-verification:{normalizedEmail}";
+        _logger.LogInformation("HybridCache instance hash: {Hash}", _cache.GetHashCode());
+        _logger.LogInformation("Generated verification code for {Email}: {Code}", normalizedEmail, code);
+        _logger.LogInformation("Saving code {Code} to cache key {Key}", code, cacheKey);
         try
         {
             await _cache.SetAsync(
-                $"email-verification:{email}",
+                cacheKey,
                 code,
                 new HybridCacheEntryOptions
                 {
                     Expiration = TimeSpan.FromMinutes(5),
                     LocalCacheExpiration = TimeSpan.FromMinutes(5)
                 }, cancellationToken: cancellationToken);
-            
-            await _cache.RemoveAsync($"attempts:{email}", cancellationToken);
+            await _cache.RemoveAsync($"attempts:{normalizedEmail}", cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to update cache for {Email}. Continuing with code generation.", email);
+            _logger.LogWarning(ex, "Failed to update cache for {Email}. Continuing with code generation.", normalizedEmail);
         }
-
+        _logger.LogInformation("Returning EmailRequest for {Email}: code={Code}", normalizedEmail, code);
         return new EmailRequest
         {
-            Recipients = [email],
+            Recipients = [normalizedEmail],
             Code = code,
             Subject = "Verification Code",
             PlainText = $"Your verification code is: {code}",
@@ -63,9 +65,13 @@ public class VerificationService(HybridCache cache, ILogger<VerificationService>
             return false;
         }
 
+        var normalizedEmail = email.Trim().ToLowerInvariant();
+        var attemptsKey = $"attempts:{normalizedEmail}";
+        var codeKey = $"email-verification:{normalizedEmail}";
+        _logger.LogInformation("HybridCache instance hash: {Hash}", _cache.GetHashCode());
+        _logger.LogInformation("Reading code from cache key {Key}", codeKey);
         try
         {
-            var attemptsKey = $"attempts:{email}";
             var attempts = await _cache.GetOrCreateAsync(
                 attemptsKey,
                 _ => ValueTask.FromResult(0),
@@ -74,21 +80,21 @@ public class VerificationService(HybridCache cache, ILogger<VerificationService>
 
             if (attempts >= MaxAttempts)
             {
-                _logger.LogWarning("Too many failed verification attempts for {Email}.", email);
+                _logger.LogWarning("Too many failed verification attempts for {Email}.", normalizedEmail);
                 return false;
             }
 
             var storedCode = await _cache.GetOrCreateAsync(
-                $"email-verification:{email}",
+                codeKey,
                 _ => ValueTask.FromResult((int?)null),
                 cancellationToken: cancellationToken
             );
-
+            _logger.LogInformation("Stored code in cache for {Email}: {StoredCode}", normalizedEmail, storedCode);
             if (storedCode == code)
             {
-                await _cache.RemoveAsync($"email-verification:{email}", cancellationToken);
+                await _cache.RemoveAsync(codeKey, cancellationToken);
                 await _cache.RemoveAsync(attemptsKey, cancellationToken);
-                _logger.LogInformation("Successful verification for {Email}", email);
+                _logger.LogInformation("Successful verification for {Email}", normalizedEmail);
                 return true;
             }
 
@@ -99,12 +105,12 @@ public class VerificationService(HybridCache cache, ILogger<VerificationService>
                 LocalCacheExpiration = TimeSpan.FromMinutes(AttemptWindowMinutes)
             }, cancellationToken: cancellationToken);
             
-            _logger.LogWarning("Failed verification for {Email} (attempt {Attempt})", email, attempts);
+            _logger.LogWarning("Failed verification for {Email} (attempt {Attempt})", normalizedEmail, attempts);
             return false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during verification for {Email}", email);
+            _logger.LogError(ex, "Error during verification for {Email}", normalizedEmail);
             return false;
         }
     }

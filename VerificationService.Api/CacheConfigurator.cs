@@ -3,73 +3,68 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace VerificationService.Api
+namespace VerificationService.Api;
+
+public static class CacheConfigurator
 {
-    public static class CacheConfigurator
+    public static void Configure(IServiceCollection services, IConfiguration configuration, ILogger logger)
     {
-        public static void Configure(IServiceCollection services, IConfiguration configuration, ILogger logger)
+        var redisConfig = Environment.GetEnvironmentVariable("Redis__Configuration")
+                          ?? configuration["Redis__Configuration"];
+        var hasRedisConfig = !string.IsNullOrEmpty(redisConfig);
+        logger.LogInformation($"[DEBUG] Redis config available: {hasRedisConfig}");
+
+        // Always add MemoryCache as fallback
+        services.AddMemoryCache();
+        logger.LogInformation("[INFO] In-memory cache configured as fallback.");
+
+        if (hasRedisConfig)
         {
-            var redisConfig = Environment.GetEnvironmentVariable("Redis__Configuration")
-                              ?? configuration["Redis__Configuration"];
-            
-            var hasRedisConfig = !string.IsNullOrEmpty(redisConfig);
-            logger.LogInformation($"[DEBUG] Redis config available: {hasRedisConfig}");
-
-            if (hasRedisConfig)
-            {
-                ConfigureRedisCache(services, redisConfig!, logger);
-            }
-            else
-            {
-                ConfigureInMemoryCache(services, logger);
-            }
-
-            // HybridCache automatically uses whichever backend is available
-            ConfigureHybridCache(services, logger);
-            logger.LogInformation("[INFO] Cache configuration completed successfully.");
+            ConfigureRedisCache(services, redisConfig!, logger);
+        }
+        else
+        {
+            logger.LogInformation("[INFO] Redis configuration not found. Using in-memory cache only.");
         }
 
-        private static void ConfigureRedisCache(IServiceCollection services, string redisConfig, ILogger logger)
-        {
-            try
-            {
-                logger.LogInformation("[INFO] Configuring Redis cache...");
-                services.AddStackExchangeRedisCache(options =>
-                {
-                    options.Configuration = redisConfig;
-                    options.ConfigurationOptions = StackExchange.Redis.ConfigurationOptions.Parse(redisConfig);
-                    options.ConfigurationOptions.ConnectTimeout = 5000;
-                    options.ConfigurationOptions.SyncTimeout = 5000;
-                    options.ConfigurationOptions.AbortOnConnectFail = false;
-                });
-                logger.LogInformation("[INFO] Redis cache configured successfully.");
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning($"[WARNING] Redis configuration failed: {ex.Message}");
-                logger.LogInformation("[INFO] Falling back to in-memory cache...");
-                ConfigureInMemoryCache(services, logger);
-            }
-        }
+        // HybridCache automatically uses whichever backend is available
+        ConfigureHybridCache(services, logger);
+        logger.LogInformation("[INFO] Cache configuration completed successfully.");
+    }
 
-        private static void ConfigureInMemoryCache(IServiceCollection services, ILogger logger)
+    private static void ConfigureRedisCache(IServiceCollection services, string redisConfig, ILogger logger)
+    {
+        try
         {
-            logger.LogInformation("[INFO] Configuring in-memory cache...");
-            services.AddMemoryCache();
-            logger.LogInformation("[INFO] In-memory cache configured successfully.");
-        }
-
-        private static void ConfigureHybridCache(IServiceCollection services, ILogger logger)
-        {
-            services.AddHybridCache(options =>
+            logger.LogInformation("[INFO] Configuring Redis cache...");
+            services.AddStackExchangeRedisCache(options =>
             {
-                options.DefaultEntryOptions = new HybridCacheEntryOptions
-                {
-                    Expiration = TimeSpan.FromMinutes(5),
-                    LocalCacheExpiration = TimeSpan.FromMinutes(5)
-                };
+                options.Configuration = redisConfig;
+                // Add some resilience options
+                options.ConfigurationOptions = StackExchange.Redis.ConfigurationOptions.Parse(redisConfig);
+                options.ConfigurationOptions.ConnectTimeout = 5000; 
+                options.ConfigurationOptions.SyncTimeout = 5000;  
+                options.ConfigurationOptions.AbortOnConnectFail = false; // Allow fallback
             });
-            logger.LogInformation("[INFO] HybridCache configured successfully.");
+            logger.LogInformation("[INFO] Redis cache configured successfully.");
         }
+        catch (Exception ex)
+        {
+            logger.LogWarning($"[WARNING] Redis configuration failed: {ex.Message}");
+            logger.LogInformation("[INFO] Will use in-memory cache as fallback.");
+        }
+    }
+
+    private static void ConfigureHybridCache(IServiceCollection services, ILogger logger)
+    {
+        services.AddHybridCache(options =>
+        {
+            options.DefaultEntryOptions = new HybridCacheEntryOptions
+            {
+                Expiration = TimeSpan.FromMinutes(5),
+                LocalCacheExpiration = TimeSpan.FromMinutes(5)
+            };
+        });
+        logger.LogInformation("[INFO] HybridCache configured successfully.");
     }
 }
