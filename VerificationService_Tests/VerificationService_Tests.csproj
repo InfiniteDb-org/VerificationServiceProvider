@@ -1,0 +1,205 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.collector" Version="6.0.2"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0"/>
+        <PackageReference Include="Moq" Version="4.20.72" />
+        <PackageReference Include="xunit" Version="2.9.2"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\VerificationService.Api\VerificationService.Api.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Azure.Core.Amqp.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Azure.Core.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Azure.Identity.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Azure.Messaging.ServiceBus.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\function.deps.json" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Google.Protobuf.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Grpc.AspNetCore.Server.ClientFactory.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Grpc.AspNetCore.Server.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Grpc.Core.Api.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Grpc.Net.Client.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Grpc.Net.ClientFactory.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Grpc.Net.Common.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Microsoft.Azure.Amqp.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Microsoft.Azure.Functions.Worker.Extensions.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Microsoft.Azure.Functions.Worker.Extensions.pdb" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Microsoft.Azure.WebJobs.Extensions.FunctionMetadataLoader.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Microsoft.Azure.WebJobs.Extensions.Rpc.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Microsoft.Azure.WebJobs.Extensions.ServiceBus.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Microsoft.Azure.WebJobs.Host.Storage.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Microsoft.Azure.WebJobs.Rpc.Core.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Microsoft.Bcl.AsyncInterfaces.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Microsoft.Extensions.Azure.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Microsoft.Identity.Client.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Microsoft.Identity.Client.Extensions.Msal.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Microsoft.IdentityModel.Abstractions.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\Microsoft.WindowsAzure.Storage.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\runtimes\win\lib\netstandard2.0\System.Security.Cryptography.ProtectedData.dll" />
+      <Content Include="bin\Debug\net9.0\.azurefunctions\System.ClientModel.dll" />
+      <Content Include="bin\Debug\net9.0\.msCoverageSourceRootsMapping_VerificationService_Tests" />
+      <Content Include="bin\Debug\net9.0\Azure.Communication.Email.dll" />
+      <Content Include="bin\Debug\net9.0\Azure.Core.Amqp.dll" />
+      <Content Include="bin\Debug\net9.0\Azure.Core.dll" />
+      <Content Include="bin\Debug\net9.0\Azure.Identity.dll" />
+      <Content Include="bin\Debug\net9.0\Azure.Messaging.ServiceBus.dll" />
+      <Content Include="bin\Debug\net9.0\Castle.Core.dll" />
+      <Content Include="bin\Debug\net9.0\CoverletSourceRootsMapping_VerificationService_Tests" />
+      <Content Include="bin\Debug\net9.0\cs\Microsoft.TestPlatform.CommunicationUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\cs\Microsoft.TestPlatform.CoreUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\cs\Microsoft.TestPlatform.CrossPlatEngine.resources.dll" />
+      <Content Include="bin\Debug\net9.0\cs\Microsoft.VisualStudio.TestPlatform.Common.resources.dll" />
+      <Content Include="bin\Debug\net9.0\cs\Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" />
+      <Content Include="bin\Debug\net9.0\de\Microsoft.TestPlatform.CommunicationUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\de\Microsoft.TestPlatform.CoreUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\de\Microsoft.TestPlatform.CrossPlatEngine.resources.dll" />
+      <Content Include="bin\Debug\net9.0\de\Microsoft.VisualStudio.TestPlatform.Common.resources.dll" />
+      <Content Include="bin\Debug\net9.0\de\Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" />
+      <Content Include="bin\Debug\net9.0\es\Microsoft.TestPlatform.CommunicationUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\es\Microsoft.TestPlatform.CoreUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\es\Microsoft.TestPlatform.CrossPlatEngine.resources.dll" />
+      <Content Include="bin\Debug\net9.0\es\Microsoft.VisualStudio.TestPlatform.Common.resources.dll" />
+      <Content Include="bin\Debug\net9.0\es\Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" />
+      <Content Include="bin\Debug\net9.0\extensions.json" />
+      <Content Include="bin\Debug\net9.0\fr\Microsoft.TestPlatform.CommunicationUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\fr\Microsoft.TestPlatform.CoreUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\fr\Microsoft.TestPlatform.CrossPlatEngine.resources.dll" />
+      <Content Include="bin\Debug\net9.0\fr\Microsoft.VisualStudio.TestPlatform.Common.resources.dll" />
+      <Content Include="bin\Debug\net9.0\fr\Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" />
+      <Content Include="bin\Debug\net9.0\functions.metadata" />
+      <Content Include="bin\Debug\net9.0\Google.Protobuf.dll" />
+      <Content Include="bin\Debug\net9.0\Grpc.Core.Api.dll" />
+      <Content Include="bin\Debug\net9.0\Grpc.Net.Client.dll" />
+      <Content Include="bin\Debug\net9.0\Grpc.Net.ClientFactory.dll" />
+      <Content Include="bin\Debug\net9.0\Grpc.Net.Common.dll" />
+      <Content Include="bin\Debug\net9.0\host.json" />
+      <Content Include="bin\Debug\net9.0\it\Microsoft.TestPlatform.CommunicationUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\it\Microsoft.TestPlatform.CoreUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\it\Microsoft.TestPlatform.CrossPlatEngine.resources.dll" />
+      <Content Include="bin\Debug\net9.0\it\Microsoft.VisualStudio.TestPlatform.Common.resources.dll" />
+      <Content Include="bin\Debug\net9.0\it\Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" />
+      <Content Include="bin\Debug\net9.0\ja\Microsoft.TestPlatform.CommunicationUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\ja\Microsoft.TestPlatform.CoreUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\ja\Microsoft.TestPlatform.CrossPlatEngine.resources.dll" />
+      <Content Include="bin\Debug\net9.0\ja\Microsoft.VisualStudio.TestPlatform.Common.resources.dll" />
+      <Content Include="bin\Debug\net9.0\ja\Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" />
+      <Content Include="bin\Debug\net9.0\ko\Microsoft.TestPlatform.CommunicationUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\ko\Microsoft.TestPlatform.CoreUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\ko\Microsoft.TestPlatform.CrossPlatEngine.resources.dll" />
+      <Content Include="bin\Debug\net9.0\ko\Microsoft.VisualStudio.TestPlatform.Common.resources.dll" />
+      <Content Include="bin\Debug\net9.0\ko\Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" />
+      <Content Include="bin\Debug\net9.0\local.settings.json" />
+      <Content Include="bin\Debug\net9.0\Microsoft.AI.DependencyCollector.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.AI.EventCounterCollector.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.AI.PerfCounterCollector.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.AI.ServerTelemetryChannel.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.AI.WindowsServer.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.ApplicationInsights.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.ApplicationInsights.WorkerService.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.Azure.Amqp.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.Azure.Functions.Worker.ApplicationInsights.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.Azure.Functions.Worker.Core.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.Azure.Functions.Worker.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.Azure.Functions.Worker.Extensions.Abstractions.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.Azure.Functions.Worker.Extensions.Http.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.Azure.Functions.Worker.Extensions.Rpc.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.Azure.Functions.Worker.Extensions.ServiceBus.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.Azure.Functions.Worker.Grpc.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.Bcl.AsyncInterfaces.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.Extensions.Azure.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.Extensions.Logging.ApplicationInsights.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.Identity.Client.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.Identity.Client.Extensions.Msal.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.IdentityModel.Abstractions.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.TestPlatform.CommunicationUtilities.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.TestPlatform.CoreUtilities.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.TestPlatform.CrossPlatEngine.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.TestPlatform.PlatformAbstractions.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.TestPlatform.Utilities.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.VisualStudio.CodeCoverage.Shim.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.VisualStudio.TestPlatform.Common.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.VisualStudio.TestPlatform.ObjectModel.dll" />
+      <Content Include="bin\Debug\net9.0\Microsoft.Win32.SystemEvents.dll" />
+      <Content Include="bin\Debug\net9.0\Moq.dll" />
+      <Content Include="bin\Debug\net9.0\Newtonsoft.Json.dll" />
+      <Content Include="bin\Debug\net9.0\pl\Microsoft.TestPlatform.CommunicationUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\pl\Microsoft.TestPlatform.CoreUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\pl\Microsoft.TestPlatform.CrossPlatEngine.resources.dll" />
+      <Content Include="bin\Debug\net9.0\pl\Microsoft.VisualStudio.TestPlatform.Common.resources.dll" />
+      <Content Include="bin\Debug\net9.0\pl\Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" />
+      <Content Include="bin\Debug\net9.0\pt-BR\Microsoft.TestPlatform.CommunicationUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\pt-BR\Microsoft.TestPlatform.CoreUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\pt-BR\Microsoft.TestPlatform.CrossPlatEngine.resources.dll" />
+      <Content Include="bin\Debug\net9.0\pt-BR\Microsoft.VisualStudio.TestPlatform.Common.resources.dll" />
+      <Content Include="bin\Debug\net9.0\pt-BR\Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" />
+      <Content Include="bin\Debug\net9.0\runtimes\unix\lib\net6.0\System.Drawing.Common.dll" />
+      <Content Include="bin\Debug\net9.0\runtimes\win\lib\net6.0\Microsoft.Win32.SystemEvents.dll" />
+      <Content Include="bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Diagnostics.PerformanceCounter.dll" />
+      <Content Include="bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Drawing.Common.dll" />
+      <Content Include="bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Security.Cryptography.ProtectedData.dll" />
+      <Content Include="bin\Debug\net9.0\runtimes\win\lib\net6.0\System.Windows.Extensions.dll" />
+      <Content Include="bin\Debug\net9.0\ru\Microsoft.TestPlatform.CommunicationUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\ru\Microsoft.TestPlatform.CoreUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\ru\Microsoft.TestPlatform.CrossPlatEngine.resources.dll" />
+      <Content Include="bin\Debug\net9.0\ru\Microsoft.VisualStudio.TestPlatform.Common.resources.dll" />
+      <Content Include="bin\Debug\net9.0\ru\Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" />
+      <Content Include="bin\Debug\net9.0\System.ClientModel.dll" />
+      <Content Include="bin\Debug\net9.0\System.Configuration.ConfigurationManager.dll" />
+      <Content Include="bin\Debug\net9.0\System.Diagnostics.PerformanceCounter.dll" />
+      <Content Include="bin\Debug\net9.0\System.Drawing.Common.dll" />
+      <Content Include="bin\Debug\net9.0\System.Memory.Data.dll" />
+      <Content Include="bin\Debug\net9.0\System.Security.Cryptography.ProtectedData.dll" />
+      <Content Include="bin\Debug\net9.0\System.Security.Permissions.dll" />
+      <Content Include="bin\Debug\net9.0\System.Windows.Extensions.dll" />
+      <Content Include="bin\Debug\net9.0\testhost.dll" />
+      <Content Include="bin\Debug\net9.0\tr\Microsoft.TestPlatform.CommunicationUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\tr\Microsoft.TestPlatform.CoreUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\tr\Microsoft.TestPlatform.CrossPlatEngine.resources.dll" />
+      <Content Include="bin\Debug\net9.0\tr\Microsoft.VisualStudio.TestPlatform.Common.resources.dll" />
+      <Content Include="bin\Debug\net9.0\tr\Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" />
+      <Content Include="bin\Debug\net9.0\VerificationService.Api" />
+      <Content Include="bin\Debug\net9.0\VerificationService.Api.deps.json" />
+      <Content Include="bin\Debug\net9.0\VerificationService.Api.dll" />
+      <Content Include="bin\Debug\net9.0\VerificationService.Api.pdb" />
+      <Content Include="bin\Debug\net9.0\VerificationService.Api.runtimeconfig.json" />
+      <Content Include="bin\Debug\net9.0\VerificationService_Tests.deps.json" />
+      <Content Include="bin\Debug\net9.0\VerificationService_Tests.dll" />
+      <Content Include="bin\Debug\net9.0\VerificationService_Tests.pdb" />
+      <Content Include="bin\Debug\net9.0\VerificationService_Tests.runtimeconfig.json" />
+      <Content Include="bin\Debug\net9.0\worker.config.json" />
+      <Content Include="bin\Debug\net9.0\xunit.abstractions.dll" />
+      <Content Include="bin\Debug\net9.0\xunit.assert.dll" />
+      <Content Include="bin\Debug\net9.0\xunit.core.dll" />
+      <Content Include="bin\Debug\net9.0\xunit.execution.dotnet.dll" />
+      <Content Include="bin\Debug\net9.0\xunit.runner.reporters.netcoreapp10.dll" />
+      <Content Include="bin\Debug\net9.0\xunit.runner.utility.netcoreapp10.dll" />
+      <Content Include="bin\Debug\net9.0\xunit.runner.visualstudio.testadapter.dll" />
+      <Content Include="bin\Debug\net9.0\zh-Hans\Microsoft.TestPlatform.CommunicationUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\zh-Hans\Microsoft.TestPlatform.CoreUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\zh-Hans\Microsoft.TestPlatform.CrossPlatEngine.resources.dll" />
+      <Content Include="bin\Debug\net9.0\zh-Hans\Microsoft.VisualStudio.TestPlatform.Common.resources.dll" />
+      <Content Include="bin\Debug\net9.0\zh-Hans\Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" />
+      <Content Include="bin\Debug\net9.0\zh-Hant\Microsoft.TestPlatform.CommunicationUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\zh-Hant\Microsoft.TestPlatform.CoreUtilities.resources.dll" />
+      <Content Include="bin\Debug\net9.0\zh-Hant\Microsoft.TestPlatform.CrossPlatEngine.resources.dll" />
+      <Content Include="bin\Debug\net9.0\zh-Hant\Microsoft.VisualStudio.TestPlatform.Common.resources.dll" />
+      <Content Include="bin\Debug\net9.0\zh-Hant\Microsoft.VisualStudio.TestPlatform.ObjectModel.resources.dll" />
+    </ItemGroup>
+
+</Project>
