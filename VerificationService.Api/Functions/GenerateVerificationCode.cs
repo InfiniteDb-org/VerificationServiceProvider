@@ -12,11 +12,11 @@ public class GenerateVerificationCode(ILogger<GenerateVerificationCode> logger, 
     private readonly ILogger<GenerateVerificationCode> _logger = logger;
     private readonly VerificationService.Api.Services.VerificationService _verificationService = verificationService;
     private readonly ServiceBusClient _serviceBusClient = serviceBusClient;
-    private readonly string _queueName = configuration["ASB_QueueName"] ?? throw new InvalidOperationException("ASB_QueueName is not configured.");
+    private readonly string _queueName = configuration["ASB_VerificationRequestsQueue"] ?? throw new InvalidOperationException("ASB_VerificationRequestsQueue is not configured.");
 
     [Function(nameof(GenerateVerificationCode))]
     public async Task Run(
-        [ServiceBusTrigger("email-verification", Connection = "ASB_ConnectionString")] ServiceBusReceivedMessage message,
+        [ServiceBusTrigger("%ASB_VerificationRequestsQueue%", Connection = "ASB_ConnectionString")] ServiceBusReceivedMessage message,
         ServiceBusMessageActions messageActions)
     {
         try
