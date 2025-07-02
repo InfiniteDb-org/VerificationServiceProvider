@@ -1,108 +1,66 @@
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace VerificationService.Api
 {
     public static class CacheConfigurator
     {
-        public static void Configure(IServiceCollection services, IConfiguration configuration)
+        public static void Configure(IServiceCollection services, IConfiguration configuration, ILogger logger)
         {
             var redisConfig = Environment.GetEnvironmentVariable("Redis__Configuration")
                               ?? configuration["Redis__Configuration"];
-            Console.WriteLine($"[DEBUG] Redis config available: {!string.IsNullOrEmpty(redisConfig)}");
+            
+            var hasRedisConfig = !string.IsNullOrEmpty(redisConfig);
+            logger.LogInformation($"[DEBUG] Redis config available: {hasRedisConfig}");
 
-            if (string.IsNullOrEmpty(redisConfig))
+            if (hasRedisConfig)
             {
-                Console.WriteLine("[INFO] Redis configuration not found. Using in-memory cache.");
-                AddInMemoryCache(services);
-                return;
-            }
-
-            // Try to configure and test Redis
-            if (TryConfigureRedis(services, redisConfig))
-            {
-                AddHybridCacheWithRedis(services);
-                Console.WriteLine("[INFO] Redis cache configured and tested successfully.");
+                ConfigureRedisCache(services, redisConfig!, logger);
             }
             else
             {
-                RemoveRedisServices(services);
-                AddInMemoryCache(services);
-                Console.WriteLine("[INFO] Falling back to in-memory cache due to Redis issues.");
+                ConfigureInMemoryCache(services, logger);
             }
+
+            // HybridCache automatically uses whichever backend is available
+            ConfigureHybridCache(services, logger);
+            logger.LogInformation("[INFO] Cache configuration completed successfully.");
         }
 
-        private static bool TryConfigureRedis(IServiceCollection services, string redisConfig)
+        private static void ConfigureRedisCache(IServiceCollection services, string redisConfig, ILogger logger)
         {
             try
             {
-                Console.WriteLine("[INFO] Configuring Redis cache...");
+                logger.LogInformation("[INFO] Configuring Redis cache...");
                 services.AddStackExchangeRedisCache(options =>
                 {
                     options.Configuration = redisConfig;
+                    options.ConfigurationOptions = StackExchange.Redis.ConfigurationOptions.Parse(redisConfig);
+                    options.ConfigurationOptions.ConnectTimeout = 5000;
+                    options.ConfigurationOptions.SyncTimeout = 5000;
+                    options.ConfigurationOptions.AbortOnConnectFail = false;
                 });
-                // Test Redis connection synchronously
-                using var serviceProvider = services.BuildServiceProvider();
-                var distributedCache = serviceProvider.GetService<IDistributedCache>();
-                if (distributedCache == null)
-                {
-                    Console.WriteLine("[WARNING] IDistributedCache service not available.");
-                    return false;
-                }
-                var testKey = $"healthcheck:{Environment.MachineName}:{DateTimeOffset.UtcNow:yyyyMMddHHmmss}";
-                var testValue = "redis-health-check";
-                Console.WriteLine("[INFO] Testing Redis connection...");
-                distributedCache.SetString(testKey, testValue, new DistributedCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(10)
-                });
-                var retrievedValue = distributedCache.GetString(testKey);
-                if (retrievedValue != testValue)
-                {
-                    Console.WriteLine("[WARNING] Redis write/read test failed - values don't match.");
-                    return false;
-                }
-                distributedCache.Remove(testKey);
-                Console.WriteLine("[INFO] Redis health check passed.");
-                return true;
+                logger.LogInformation("[INFO] Redis cache configured successfully.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[WARNING] Redis configuration failed: {ex.Message}");
-                return false;
+                logger.LogWarning($"[WARNING] Redis configuration failed: {ex.Message}");
+                logger.LogInformation("[INFO] Falling back to in-memory cache...");
+                ConfigureInMemoryCache(services, logger);
             }
         }
 
-        private static void RemoveRedisServices(IServiceCollection services)
+        private static void ConfigureInMemoryCache(IServiceCollection services, ILogger logger)
         {
-            var redisServices = services
-                .Where(x => x.ServiceType.FullName?.Contains("Redis") == true ||
-                           x.ServiceType.FullName?.Contains("StackExchange") == true)
-                .ToList();
-            foreach (var service in redisServices)
-            {
-                services.Remove(service);
-            }
-        }
-
-        private static void AddHybridCacheWithRedis(IServiceCollection services)
-        {
-            services.AddHybridCache(options =>
-            {
-                options.DefaultEntryOptions = new HybridCacheEntryOptions
-                {
-                    Expiration = TimeSpan.FromMinutes(5),
-                    LocalCacheExpiration = TimeSpan.FromMinutes(5)
-                };
-            });
-        }
-
-        private static void AddInMemoryCache(IServiceCollection services)
-        {
-            Console.WriteLine("[INFO] Configuring in-memory cache...");
+            logger.LogInformation("[INFO] Configuring in-memory cache...");
             services.AddMemoryCache();
+            logger.LogInformation("[INFO] In-memory cache configured successfully.");
+        }
+
+        private static void ConfigureHybridCache(IServiceCollection services, ILogger logger)
+        {
             services.AddHybridCache(options =>
             {
                 options.DefaultEntryOptions = new HybridCacheEntryOptions
@@ -111,7 +69,7 @@ namespace VerificationService.Api
                     LocalCacheExpiration = TimeSpan.FromMinutes(5)
                 };
             });
-            Console.WriteLine("[INFO] In-memory cache configured successfully.");
+            logger.LogInformation("[INFO] HybridCache configured successfully.");
         }
     }
 }

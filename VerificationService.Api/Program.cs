@@ -2,11 +2,9 @@ using Azure.Communication.Email;
 using Azure.Messaging.ServiceBus;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
-using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Caching.Hybrid;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
@@ -26,7 +24,10 @@ builder.Services.AddSingleton(_ => new EmailClient(acsConnectionString));
 builder.Services.AddSingleton(_ => new ServiceBusClient(asbConnectionString));
 builder.Services.AddSingleton<VerificationService.Api.Services.VerificationService>();
 
-// cache setup 
-VerificationService.Api.CacheConfigurator.Configure(builder.Services, builder.Configuration);
+// Skapa logger (efter att DI är satt upp)
+using var loggerFactory = LoggerFactory.Create(logging => logging.AddConsole());
+var logger = loggerFactory.CreateLogger("CacheConfigurator");
+
+VerificationService.Api.CacheConfigurator.Configure(builder.Services, builder.Configuration, logger);
 
 builder.Build().Run();
