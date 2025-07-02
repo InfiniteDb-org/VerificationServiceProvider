@@ -39,7 +39,7 @@ public class GenerateVerificationCode(ILogger<GenerateVerificationCode> logger, 
                 var emailRequest = _verificationService.GenerateVerificationCode(evt.Email);
             
                 // Extract code from the email request
-                var code = ExtractCodeFromEmailRequest(emailRequest);
+                var code = emailRequest.Code;
             
                 // Create event for EmailService with just email + code
                 var verificationCodeSentEvent = new VerificationCodeSentEvent
@@ -61,14 +61,5 @@ public class GenerateVerificationCode(ILogger<GenerateVerificationCode> logger, 
             _logger.LogError(ex, "Error generating verification code");
             await messageActions.AbandonMessageAsync(message);
         }
-    }
-
-    private static int ExtractCodeFromEmailRequest(Contracts.Requests.EmailRequest emailRequest)
-    {
-        // Extract code from PlainText (format: "Your verification code is: 123456")
-        var plainText = emailRequest.PlainText;
-        var codeStart = plainText.LastIndexOf(": ", StringComparison.Ordinal) + 2;
-        var codeString = plainText.Substring(codeStart).Trim();
-        return int.Parse(codeString);
     }
 }

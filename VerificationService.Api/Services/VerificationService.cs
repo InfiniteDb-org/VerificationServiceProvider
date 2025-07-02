@@ -23,23 +23,7 @@ public class VerificationService(IMemoryCache cache, ILogger<VerificationService
         return new EmailRequest
         {
             Recipients = [email],
-            Subject = "Verification Code",
-            PlainText = $"Your verification code is: {code}",
-            Html = $@"
-        <html>
-          <body style='background-color:#f9f9fb; font-family:Arial, sans-serif; padding:20px; color:#20203A;'>
-            <div style='max-width:500px; margin:0 auto; background-color:white; padding:30px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.05);'>
-              <h2 style='color:#20203A; text-align:center;'>Verification Code</h2>
-              <p style='font-size:16px; text-align:center;'>Your verification code is:</p>
-              <div style='font-size:28px; font-weight:bold; text-align:center; margin:20px 0; color:#f36fff;'>
-                {code}
-              </div>
-              <p style='text-align:center; font-size:14px; color:#777;'>
-                Enter this code to verify your email address. This code is valid for a limited time.
-              </p>
-            </div>
-          </body>
-        </html>"
+            Code = code
         };
     }
 
