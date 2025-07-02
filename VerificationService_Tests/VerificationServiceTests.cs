@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
 using Moq;
 using VerificationService.Api.Contracts.Requests;
@@ -7,17 +7,52 @@ namespace VerificationService_Tests;
 
 public class VerificationServiceTests
 {
+    // Minimal stub for HybridCache, only implements required members for test isolation
+    private class TestHybridCache : HybridCache
+    {
+        private readonly Dictionary<string, object> _store = new();
+        // Tag-based removal is a no-op in tests
+        public override ValueTask RemoveByTagAsync(string tag, CancellationToken cancellationToken = default)
+            => ValueTask.CompletedTask;
+        // Emulates distributed cache for repeatable, isolated tests
+        public override ValueTask<T> GetOrCreateAsync<TState, T>(string key, TState state, Func<TState, CancellationToken, ValueTask<T>> factory, HybridCacheEntryOptions? options = null, IEnumerable<string>? tags = null, CancellationToken cancellationToken = default)
+        {
+            if (_store.TryGetValue(key, out var value) && value is T t)
+                return ValueTask.FromResult(t);
+            var result = factory(state, cancellationToken).GetAwaiter().GetResult();
+            _store[key] = result!;
+            return ValueTask.FromResult(result);
+        }
+        public override ValueTask RemoveAsync(string key, CancellationToken cancellationToken = default)
+        {
+            _store.Remove(key);
+            return ValueTask.CompletedTask;
+        }
+        public override ValueTask SetAsync<T>(string key, T value, HybridCacheEntryOptions? options = null, IEnumerable<string>? tags = null, CancellationToken cancellationToken = default)
+        {
+            _store[key] = value!;
+            return ValueTask.CompletedTask;
+        }
+        // Used for direct cache assertions in tests
+        public ValueTask<T?> TryGetValueAsync<T>(string key)
+        {
+            if (_store.TryGetValue(key, out var value) && value is T t)
+                return ValueTask.FromResult<T?>(t);
+            return ValueTask.FromResult<T?>(default);
+        }
+    }
+
     [Fact]
-    public void GenerateVerificationCode_ShouldStoreCodeAndReturnEmailRequest()
+    public async Task GenerateVerificationCode_ShouldStoreCodeAndReturnEmailRequest()
     {
         // Arrange
-        var cache = new MemoryCache(new MemoryCacheOptions());
+        var cache = new TestHybridCache();
         var logger = Mock.Of<ILogger<VerificationService.Api.Services.VerificationService>>();
         var service = new VerificationService.Api.Services.VerificationService(cache, logger);
         var email = "test@example.com";
 
         // Act
-        var emailRequest = service.GenerateVerificationCode(email);
+        var emailRequest = await service.GenerateVerificationCode(email);
 
         // Assert
         Assert.NotNull(emailRequest);
@@ -26,85 +61,86 @@ public class VerificationServiceTests
         Assert.Contains("Your verification code is:", emailRequest.PlainText);
         Assert.Contains("Your verification code is:", emailRequest.Html);
         // Ensure code is stored in cache
-        Assert.True(cache.TryGetValue(email, out int code));
-        Assert.True(code is >= 100000 and <= 999999);
+        var code = await cache.TryGetValueAsync<int>("email-verification:" + email);
+        Assert.NotEqual(0, code);
+        Assert.InRange(code, 100000, 999999);
     }
 
     [Fact]
-    public void VerifyCode_ShouldReturnTrue_WhenCodeIsCorrect()
+    public async Task VerifyCode_ShouldReturnTrue_WhenCodeIsCorrect()
     {
         // Arrange
-        var cache = new MemoryCache(new MemoryCacheOptions());
+        var cache = new TestHybridCache();
         var logger = Mock.Of<ILogger<VerificationService.Api.Services.VerificationService>>();
         var service = new VerificationService.Api.Services.VerificationService(cache, logger);
-        var email = "test@example.com";
-        var emailRequest = service.GenerateVerificationCode(email);
+        const string email = "test@example.com";
+        var emailRequest = await service.GenerateVerificationCode(email);
         var code = ExtractCodeFromRequest(emailRequest);
 
         // Act
-        var result = service.VerifyCode(email, code);
+        var result = await service.VerifyCodeAsync(email, code);
 
         // Assert
         Assert.True(result);
         // Code should be removed from cache after successful verification
-        Assert.False(cache.TryGetValue(email, out _));
+        var codeAfterVerification = await cache.TryGetValueAsync<int>("email-verification:" + email);
+        Assert.Equal(0, codeAfterVerification);
     }
 
     [Fact]
-    public void VerifyCode_ShouldReturnFalse_WhenCodeIsIncorrect()
+    public async Task VerifyCode_ShouldReturnFalse_WhenCodeIsIncorrect()
     {
         // Arrange
-        var cache = new MemoryCache(new MemoryCacheOptions());
+        var cache = new TestHybridCache();
         var logger = Mock.Of<ILogger<VerificationService.Api.Services.VerificationService>>();
         var service = new VerificationService.Api.Services.VerificationService(cache, logger);
-        var email = "test@example.com";
-        service.GenerateVerificationCode(email);
+        const string email = "test@example.com";
+        await service.GenerateVerificationCode(email);
 
         // Act
-        var result = service.VerifyCode(email, 111111); // Wrong code
+        var result = await service.VerifyCodeAsync(email, 111111); // Wrong code
 
         // Assert
         Assert.False(result);
     }
 
     [Fact]
-    public void VerifyCode_ShouldThrottleAfterMaxAttempts()
+    public async Task VerifyCode_ShouldThrottleAfterMaxAttempts()
     {
         // Arrange
-        var cache = new MemoryCache(new MemoryCacheOptions());
+        var cache = new TestHybridCache();
         var logger = Mock.Of<ILogger<VerificationService.Api.Services.VerificationService>>();
         var service = new VerificationService.Api.Services.VerificationService(cache, logger);
         var email = "test@example.com";
-        service.GenerateVerificationCode(email);
+        await service.GenerateVerificationCode(email);
 
         // Act
-        for (int i = 0; i < 5; i++)
-            service.VerifyCode(email, 111111); // Wrong code 5 times
-        var result = service.VerifyCode(email, 111111); // 6th attempt
+        for (var i = 0; i < 5; i++)
+            await service.VerifyCodeAsync(email, 111111); // Wrong code 5 times
+        var result = await service.VerifyCodeAsync(email, 111111); // 6th attempt
 
         // Assert
         Assert.False(result);
     }
 
     [Fact]
-    public void GenerateVerificationCode_ShouldResetAttempts()
+    public async Task GenerateVerificationCode_ShouldResetAttempts()
     {
         // Arrange
-        var cache = new MemoryCache(new MemoryCacheOptions());
+        var cache = new TestHybridCache();
         var logger = Mock.Of<ILogger<VerificationService.Api.Services.VerificationService>>();
         var service = new VerificationService.Api.Services.VerificationService(cache, logger);
-        var email = "test@example.com";
-        service.GenerateVerificationCode(email);
-        for (int i = 0; i < 3; i++)
-            service.VerifyCode(email, 111111); // Wrong code
+        const string email = "test@example.com";
+        await service.GenerateVerificationCode(email);
+        for (var i = 0; i < 3; i++)
+            await service.VerifyCodeAsync(email, 111111); // Wrong code
         // Simulate "too many attempts"
-        for (int i = 0; i < 3; i++)
-            service.VerifyCode(email, 111111);
+        for (var i = 0; i < 3; i++)
+            await service.VerifyCodeAsync(email, 111111);
         // New code is generated, attempts should be reset
-        service.GenerateVerificationCode(email);
-        var emailRequest = service.GenerateVerificationCode(email);
+        var emailRequest = await service.GenerateVerificationCode(email);
         var code = ExtractCodeFromRequest(emailRequest);
-        var result = service.VerifyCode(email, code);
+        var result = await service.VerifyCodeAsync(email, code);
 
         // Assert
         Assert.True(result);

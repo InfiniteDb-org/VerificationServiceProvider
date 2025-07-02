@@ -36,7 +36,7 @@ public class GenerateVerificationCode(ILogger<GenerateVerificationCode> logger, 
                 }
 
                 // Generate verification code (stores in cache)
-                var emailRequest = _verificationService.GenerateVerificationCode(evt.Email);
+                var emailRequest = await _verificationService.GenerateVerificationCode(evt.Email);
             
                 // Extract code from the email request
                 var code = emailRequest.Code;

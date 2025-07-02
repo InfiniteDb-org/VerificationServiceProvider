@@ -30,7 +30,7 @@ public class VerifyCode(ILogger<VerifyCode> logger, VerificationService.Api.Serv
                 return bad;
             }
 
-            var isValid = _verificationService.VerifyCode(request.Email, request.Code);
+            var isValid = await _verificationService.VerifyCodeAsync(request.Email, request.Code);
             var response = req.CreateResponse(HttpStatusCode.OK);
             await response.WriteStringAsync(isValid ? "Code is valid." : "Code is invalid.");
             return response;
