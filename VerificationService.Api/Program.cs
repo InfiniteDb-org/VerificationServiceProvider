@@ -15,10 +15,10 @@ builder.Services.AddSingleton<VerificationService.Api.Services.VerificationServi
 builder.Services.AddSingleton<ServiceBusClient>(sp =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
-    var connectionString = config["ASBConnection"];
+    var connectionString = config["ASB_ConnectionString"];
 
     if (string.IsNullOrWhiteSpace(connectionString))
-        throw new InvalidOperationException("ASBConnection is not configured.");
+        throw new InvalidOperationException("ASB_ConnectionString is not configured.");
 
     return new ServiceBusClient(connectionString);
 });
