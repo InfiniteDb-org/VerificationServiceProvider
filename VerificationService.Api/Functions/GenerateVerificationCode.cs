@@ -16,7 +16,7 @@ public class GenerateVerificationCode(ILogger<GenerateVerificationCode> logger, 
 
     [Function(nameof(GenerateVerificationCode))]
     public async Task Run(
-        [ServiceBusTrigger("verification-requests", Connection = "ASB_ConnectionString")] ServiceBusReceivedMessage message,
+        [ServiceBusTrigger("email-verification", Connection = "ASB_ConnectionString")] ServiceBusReceivedMessage message,
         ServiceBusMessageActions messageActions)
     {
         try
@@ -37,9 +37,11 @@ public class GenerateVerificationCode(ILogger<GenerateVerificationCode> logger, 
 
                 // Generate verification code (stores in cache)
                 var emailRequest = _verificationService.GenerateVerificationCode(evt.Email);
+            
+                // Extract code from the email request
                 var code = ExtractCodeFromEmailRequest(emailRequest);
             
-                // Extract code and create event for EmailService
+                // Create event for EmailService with just email + code
                 var verificationCodeSentEvent = new VerificationCodeSentEvent
                 {
                     Email = evt.Email,
