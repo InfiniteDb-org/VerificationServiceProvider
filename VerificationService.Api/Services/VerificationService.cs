@@ -15,17 +15,34 @@ public class VerificationService(HybridCache cache, ILogger<VerificationService>
 
     public async Task<EmailRequest> GenerateVerificationCode(string email, CancellationToken cancellationToken = default)
     {
+        // Check cancellation early
+        cancellationToken.ThrowIfCancellationRequested();
+        
+        // email validation
+        if (string.IsNullOrWhiteSpace(email))
+            throw new ArgumentException("Email cannot be null or empty", nameof(email));
+
         var code = GenerateCode();
-        _logger.LogInformation("Generated verification code for {Email}: {Code}", email, code); // Debug: log generated code
-        await _cache.SetAsync(
-            $"email-verification:{email}",
-            code,
-            new HybridCacheEntryOptions
-            {
-                Expiration = TimeSpan.FromMinutes(5),
-                LocalCacheExpiration = TimeSpan.FromMinutes(5)
-            }, cancellationToken: cancellationToken);
-        await _cache.RemoveAsync($"attempts:{email}", cancellationToken);
+        _logger.LogInformation("Generated verification code for {Email}: {Code}", email, code);
+        
+        try
+        {
+            await _cache.SetAsync(
+                $"email-verification:{email}",
+                code,
+                new HybridCacheEntryOptions
+                {
+                    Expiration = TimeSpan.FromMinutes(5),
+                    LocalCacheExpiration = TimeSpan.FromMinutes(5)
+                }, cancellationToken: cancellationToken);
+            
+            await _cache.RemoveAsync($"attempts:{email}", cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to update cache for {Email}. Continuing with code generation.", email);
+        }
+
         return new EmailRequest
         {
             Recipients = [email],
@@ -38,37 +55,57 @@ public class VerificationService(HybridCache cache, ILogger<VerificationService>
 
     public async Task<bool> VerifyCodeAsync(string email, int code, CancellationToken cancellationToken = default)
     {
-        var attemptsKey = $"attempts:{email}";
-        var attempts = await _cache.GetOrCreateAsync(
-            attemptsKey,
-            _ => ValueTask.FromResult(0),
-            cancellationToken: cancellationToken
-        );
-        if (attempts >= MaxAttempts)
+        cancellationToken.ThrowIfCancellationRequested();
+        
+        if (string.IsNullOrWhiteSpace(email))
         {
-            _logger.LogWarning("Too many failed verification attempts for {Email}.", email);
+            _logger.LogWarning("Verification attempted with invalid email");
             return false;
         }
 
-        var storedCode = await _cache.GetOrCreateAsync(
-            $"email-verification:{email}",
-            _ => ValueTask.FromResult((int?)null),
-            cancellationToken: cancellationToken
-        );
-        if (storedCode == code)
+        try
         {
-            await _cache.RemoveAsync($"email-verification:{email}", cancellationToken);
-            await _cache.RemoveAsync(attemptsKey, cancellationToken);
-            return true;
-        }
+            var attemptsKey = $"attempts:{email}";
+            var attempts = await _cache.GetOrCreateAsync(
+                attemptsKey,
+                _ => ValueTask.FromResult(0),
+                cancellationToken: cancellationToken
+            );
 
-        attempts++;
-        await _cache.SetAsync(attemptsKey, attempts, new HybridCacheEntryOptions
+            if (attempts >= MaxAttempts)
+            {
+                _logger.LogWarning("Too many failed verification attempts for {Email}.", email);
+                return false;
+            }
+
+            var storedCode = await _cache.GetOrCreateAsync(
+                $"email-verification:{email}",
+                _ => ValueTask.FromResult((int?)null),
+                cancellationToken: cancellationToken
+            );
+
+            if (storedCode == code)
+            {
+                await _cache.RemoveAsync($"email-verification:{email}", cancellationToken);
+                await _cache.RemoveAsync(attemptsKey, cancellationToken);
+                _logger.LogInformation("Successful verification for {Email}", email);
+                return true;
+            }
+
+            attempts++;
+            await _cache.SetAsync(attemptsKey, attempts, new HybridCacheEntryOptions
+            {
+                Expiration = TimeSpan.FromMinutes(AttemptWindowMinutes),
+                LocalCacheExpiration = TimeSpan.FromMinutes(AttemptWindowMinutes)
+            }, cancellationToken: cancellationToken);
+            
+            _logger.LogWarning("Failed verification for {Email} (attempt {Attempt})", email, attempts);
+            return false;
+        }
+        catch (Exception ex)
         {
-            Expiration = TimeSpan.FromMinutes(AttemptWindowMinutes),
-            LocalCacheExpiration = TimeSpan.FromMinutes(AttemptWindowMinutes)
-        }, cancellationToken: cancellationToken);
-        _logger.LogWarning("Failed verification for {Email} (attempt {Attempt})", email, attempts);
-        return false;
+            _logger.LogError(ex, "Error during verification for {Email}", email);
+            return false;
+        }
     }
 }
