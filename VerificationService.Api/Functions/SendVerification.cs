@@ -15,11 +15,13 @@ namespace VerificationService.Api.Functions;
 public class SendVerification(
     ILogger<SendVerification> logger, 
     ServiceBusClient busClient,
-    IConfiguration configuration)
+    IConfiguration configuration,
+    VerificationService.Api.Services.VerificationService verificationService)
 {
     private readonly ILogger<SendVerification> _logger = logger;
     private readonly ServiceBusClient _busClient = busClient;
-    private readonly string _verificationQueueName = configuration["ASB_VerificationRequestsQueue"] ?? "verification-requests";
+    private readonly VerificationService.Api.Services.VerificationService _verificationService = verificationService;
+    private readonly string _verificationQueueName = configuration["ASB_VerificationRequestsQueue"] ?? "account-events";
 
     [Function("SendVerification")]
     public async Task<HttpResponseData> Run(
@@ -29,6 +31,12 @@ public class SendVerification(
         {
             var body = await new StreamReader(req.Body).ReadToEndAsync();
             _logger.LogInformation("SendVerification HTTP endpoint called (DEV ONLY). Raw body: " + body);
+            _logger.LogInformation("=== SERVICE BUS CONFIG DEBUG ===");
+            _logger.LogInformation("Queue Name: {QueueName}", _verificationQueueName);
+            _logger.LogInformation("ASB_VerificationRequestsQueue env: {EnvValue}", 
+                System.Environment.GetEnvironmentVariable("ASB_VerificationRequestsQueue"));
+            _logger.LogInformation("ASB_ConnectionString configured: {HasConnectionString}", 
+                !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("ASB_ConnectionString")));
 
             var request = JsonConvert.DeserializeObject<VerificationRequest>(body);
 

@@ -74,10 +74,10 @@ public class VerificationServiceTests
     [InlineData("")]
     [InlineData(" ")]
     [InlineData(null)]
-    public async Task GenerateVerificationCode_WithInvalidEmail_ShouldThrowArgumentException(string invalidEmail)
+    public async Task GenerateVerificationCode_WithInvalidEmail_ShouldThrowArgumentException(string? invalidEmail)
     {
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => _service.GenerateVerificationCode(invalidEmail));
+        await Assert.ThrowsAsync<ArgumentException>(() => _service.GenerateVerificationCode(invalidEmail!));
     }
 
     [Fact]

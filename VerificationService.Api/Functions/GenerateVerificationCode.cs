@@ -19,6 +19,13 @@ public class GenerateVerificationCode(ILogger<GenerateVerificationCode> logger, 
         [ServiceBusTrigger("%ASB_VerificationRequestsQueue%", Connection = "ASB_ConnectionString")] ServiceBusReceivedMessage message,
         ServiceBusMessageActions messageActions)
     {
+        _logger.LogInformation("=== GenerateVerificationCode TRIGGERED ===");
+        _logger.LogInformation("Message ID: {MessageId}", message.MessageId);
+        _logger.LogInformation("Message Body: {MessageBody}", message.Body.ToString());
+        _logger.LogInformation("Queue name from config: {QueueName}", _emailQueueName);
+        _logger.LogInformation("ASB_VerificationRequestsQueue config: {ConfigValue}", 
+            System.Environment.GetEnvironmentVariable("ASB_VerificationRequestsQueue"));
+        
         try
         {
             var messageBody = message.Body?.ToString();
@@ -45,6 +52,7 @@ public class GenerateVerificationCode(ILogger<GenerateVerificationCode> logger, 
             
             // Extract code from the email request
             var code = emailRequest.Code;
+            _logger.LogInformation("Generated EmailRequest for {Email}: code={Code}", evt.Email, code);
             
             // Create event for EmailService with just email + code
             var verificationCodeSentEvent = new VerificationCodeSentEvent
@@ -52,6 +60,11 @@ public class GenerateVerificationCode(ILogger<GenerateVerificationCode> logger, 
                 Email = evt.Email,
                 Code = code
             };
+            
+            _logger.LogInformation("send to email-verification: Email={Email}, Code={Code}, EventJson={EventJson}",
+                verificationCodeSentEvent.Email,
+                verificationCodeSentEvent.Code,
+                JsonConvert.SerializeObject(verificationCodeSentEvent));
             
             var sender = _serviceBusClient.CreateSender(_emailQueueName);
             await sender.SendMessageAsync(new ServiceBusMessage(JsonConvert.SerializeObject(verificationCodeSentEvent)));
