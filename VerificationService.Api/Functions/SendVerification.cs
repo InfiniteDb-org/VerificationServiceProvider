@@ -3,17 +3,23 @@ using Azure.Messaging.ServiceBus;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using VerificationService.Api.Contracts.Events;
 using VerificationService.Api.Contracts.Requests;
 
 namespace VerificationService.Api.Functions;
 
-public class SendVerification(ILogger<SendVerification> logger, VerificationService.Api.Services.VerificationService verificationService, ServiceBusClient busClient)
+
+#if DEBUG
+public class SendVerification(
+    ILogger<SendVerification> logger, 
+    ServiceBusClient busClient,
+    IConfiguration configuration)
 {
     private readonly ILogger<SendVerification> _logger = logger;
-    private readonly VerificationService.Api.Services.VerificationService _verificationService = verificationService;
     private readonly ServiceBusClient _busClient = busClient;
+    private readonly string _verificationQueueName = configuration["ASB_VerificationRequestsQueue"] ?? "verification-requests";
 
     [Function("SendVerification")]
     public async Task<HttpResponseData> Run(
@@ -22,10 +28,9 @@ public class SendVerification(ILogger<SendVerification> logger, VerificationServ
         try
         {
             var body = await new StreamReader(req.Body).ReadToEndAsync();
-            _logger.LogInformation("SendVerification HTTP endpoint called. Raw body: " + body);
+            _logger.LogInformation("SendVerification HTTP endpoint called (DEV ONLY). Raw body: " + body);
 
             var request = JsonConvert.DeserializeObject<VerificationRequest>(body);
-            _logger.LogInformation("Deserialized Email: " + request?.Email);
 
             if (request == null || string.IsNullOrWhiteSpace(request.Email))
             {
@@ -34,30 +39,22 @@ public class SendVerification(ILogger<SendVerification> logger, VerificationServ
                 await badResponse.WriteStringAsync("Email is required.");
                 return badResponse;
             }
-
-            // Generate verification code
-            var emailRequest = await _verificationService.GenerateVerificationCode(request.Email);
-            _logger.LogInformation("Generated EmailRequest for {Email}: code={Code}", request.Email, emailRequest.Code); // Debug: log code passed to event
             
-            // Extract code and create event for EmailService
-            var code = ExtractCodeFromEmailRequest(emailRequest);
-            _logger.LogInformation("Extracted code from EmailRequest for {Email}: code={Code}", request.Email, code); // Debug: log extracted code
-            var verificationCodeSentEvent = new VerificationCodeSentEvent
+            var verificationRequestEvent = new VerificationCodeRequestedEvent
             {
-                Email = request.Email,
-                Code = code
+                Email = request.Email
             };
             
-            var messageJson = JsonConvert.SerializeObject(verificationCodeSentEvent);
-            _logger.LogInformation("Message to be sent to EmailService: " + messageJson);
-
-            // Send to EmailService queue
-            var sender = _busClient.CreateSender("email-verification");
+            var messageJson = JsonConvert.SerializeObject(verificationRequestEvent);
+            _logger.LogInformation("Sending verification request to queue: " + messageJson);
+            
+            var sender = _busClient.CreateSender(_verificationQueueName);
             await sender.SendMessageAsync(new ServiceBusMessage(messageJson));
-            _logger.LogInformation("Message sent to EmailService queue.");
+            
+            _logger.LogInformation("Verification request sent to queue for processing.");
 
             var response = req.CreateResponse(HttpStatusCode.Accepted);
-            await response.WriteStringAsync($"Verification code sent to {request.Email}.");
+            await response.WriteStringAsync($"Verification code request submitted for {request.Email}.");
             return response;
         }
         catch (Exception ex)
@@ -68,13 +65,5 @@ public class SendVerification(ILogger<SendVerification> logger, VerificationServ
             return errorResponse;
         }
     }
-
-    private static int ExtractCodeFromEmailRequest(EmailRequest emailRequest)
-    {
-        // Extract code from PlainText (format: "Your verification code is: 123456")
-        var plainText = emailRequest.PlainText;
-        var codeStart = plainText.LastIndexOf(": ", StringComparison.Ordinal) + 2;
-        var codeString = plainText[codeStart..].Trim();
-        return int.Parse(codeString);
-    }
 }
+#endif
