@@ -12,7 +12,7 @@ public class GenerateVerificationCode(ILogger<GenerateVerificationCode> logger, 
     private readonly ILogger<GenerateVerificationCode> _logger = logger;
     private readonly VerificationService.Api.Services.VerificationService _verificationService = verificationService;
     private readonly ServiceBusClient _serviceBusClient = serviceBusClient;
-    private readonly string _emailQueueName = configuration["ASB_EmailQueue"] ?? "email-verification";
+    private readonly string _verificationEmailQueueName = configuration["ASB_VerificationEmailQueue"] ?? "verification-code-emails";
 
     [Function(nameof(GenerateVerificationCode))]
     public async Task Run(
@@ -20,9 +20,10 @@ public class GenerateVerificationCode(ILogger<GenerateVerificationCode> logger, 
         ServiceBusMessageActions messageActions)
     {
         _logger.LogInformation("=== GenerateVerificationCode TRIGGERED ===");
+        _logger.LogInformation("Listening on queue: verification-code-requests");
         _logger.LogInformation("Message ID: {MessageId}", message.MessageId);
         _logger.LogInformation("Message Body: {MessageBody}", message.Body.ToString());
-        _logger.LogInformation("Queue name from config: {QueueName}", _emailQueueName);
+        _logger.LogInformation("Will send to queue: {QueueName}", _verificationEmailQueueName);
         _logger.LogInformation("ASB_VerificationRequestsQueue config: {ConfigValue}", 
             System.Environment.GetEnvironmentVariable("ASB_VerificationRequestsQueue"));
         
@@ -61,16 +62,16 @@ public class GenerateVerificationCode(ILogger<GenerateVerificationCode> logger, 
                 Code = code
             };
             
-            _logger.LogInformation("send to email-verification: Email={Email}, Code={Code}, EventJson={EventJson}",
+            _logger.LogInformation("Sending VerificationCodeSentEvent to verification-code-emails queue: Email={Email}, Code={Code}, EventJson={EventJson}",
                 verificationCodeSentEvent.Email,
                 verificationCodeSentEvent.Code,
                 JsonConvert.SerializeObject(verificationCodeSentEvent));
             
-            var sender = _serviceBusClient.CreateSender(_emailQueueName);
+            var sender = _serviceBusClient.CreateSender(_verificationEmailQueueName);
             await sender.SendMessageAsync(new ServiceBusMessage(JsonConvert.SerializeObject(verificationCodeSentEvent)));
 
             await messageActions.CompleteMessageAsync(message);
-            _logger.LogInformation("Verification code generated and sent to EmailService for: {Email}", evt.Email);
+            _logger.LogInformation("Successfully sent verification code to verification-code-emails queue for EmailService: {Email}", evt.Email);
         }
         catch (Exception ex)
         {
