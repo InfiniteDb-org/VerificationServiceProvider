@@ -12,6 +12,7 @@ namespace VerificationService.Api.Functions;
 
 
 #if DEBUG
+// HTTP endpoint for manually triggering verification requests
 public class SendVerification(
     ILogger<SendVerification> logger, 
     ServiceBusClient busClient,
@@ -31,35 +32,26 @@ public class SendVerification(
         {
             var body = await new StreamReader(req.Body).ReadToEndAsync();
             _logger.LogInformation("SendVerification HTTP endpoint called (DEV ONLY). Raw body: " + body);
-            _logger.LogInformation("=== SERVICE BUS CONFIG DEBUG ===");
-            _logger.LogInformation("Queue Name: {QueueName}", _verificationQueueName);
-            _logger.LogInformation("ASB_VerificationRequestsQueue env: {EnvValue}", 
-                System.Environment.GetEnvironmentVariable("ASB_VerificationRequestsQueue"));
-            _logger.LogInformation("ASB_ConnectionString configured: {HasConnectionString}", 
-                !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("ASB_ConnectionString")));
 
+            // validate and parse request
             var request = JsonConvert.DeserializeObject<VerificationRequest>(body);
 
             if (request == null || string.IsNullOrWhiteSpace(request.Email))
             {
-                _logger.LogWarning("Invalid email input.");
+                /*_logger.LogWarning("Invalid email input.");*/
                 var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
                 await badResponse.WriteStringAsync("Email is required.");
                 return badResponse;
             }
             
-            var verificationRequestEvent = new VerificationCodeRequestedEvent
-            {
-                Email = request.Email
-            };
-            
+            // Create event and send to Service Bus for async processing
+            var verificationRequestEvent = new VerificationCodeRequestedEvent { Email = request.Email };
             var messageJson = JsonConvert.SerializeObject(verificationRequestEvent);
-            _logger.LogInformation("Sending verification request to queue: " + messageJson);
-            
+            /*_logger.LogInformation("Sending verification request to queue: " + messageJson);*/
             var sender = _busClient.CreateSender(_verificationQueueName);
             await sender.SendMessageAsync(new ServiceBusMessage(messageJson));
             
-            _logger.LogInformation("Verification request sent to queue for processing.");
+            /*_logger.LogInformation("Verification request sent to queue for processing.");*/
 
             var response = req.CreateResponse(HttpStatusCode.Accepted);
             await response.WriteStringAsync($"Verification code request submitted for {request.Email}.");

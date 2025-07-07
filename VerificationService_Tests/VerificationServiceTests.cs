@@ -13,6 +13,7 @@ public class VerificationServiceTests
 
     public VerificationServiceTests()
     {
+        // Use in-memory cache and mock logger for isolation
         _cache = new TestHybridCache();
         _loggerMock = new Mock<ILogger<VerificationService.Api.Services.VerificationService>>();
         _service = new VerificationService.Api.Services.VerificationService(_cache, _loggerMock.Object);
@@ -34,7 +35,9 @@ public class VerificationServiceTests
         Assert.Contains("Your verification code is:", emailRequest.PlainText);
         Assert.Contains("Your verification code is:", emailRequest.Html);
         
-        var storedCode = await _cache.TryGetValueAsync<int>("email-verification:" + email);
+        var storedCodeStr = await _cache.TryGetValueAsync<string>("email-verification:" + email);
+        Assert.NotNull(storedCodeStr);
+        var storedCode = int.Parse(storedCodeStr);
         Assert.InRange(storedCode, 100000, 999999);
     }
 
@@ -138,26 +141,6 @@ public class VerificationServiceTests
 
         // Assert
         Assert.True(result); // New code generation should reset attempt counter
-    }
-
-    [Fact]
-    public async Task GenerateVerificationCode_ShouldLogCodeGeneration()
-    {
-        // Arrange
-        const string email = "test@example.com";
-
-        // Act
-        await _service.GenerateVerificationCode(email);
-
-        // Assert
-        _loggerMock.Verify(
-            x => x.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains($"Generated verification code for {email}")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-            Times.Once);
     }
 
     [Fact]

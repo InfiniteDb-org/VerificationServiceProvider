@@ -20,7 +20,7 @@ public class VerifyCode(ILogger<VerifyCode> logger, VerificationService.Api.Serv
         try
         {
             var body = await new StreamReader(req.Body).ReadToEndAsync();
-            _logger.LogInformation("Request body: " + body);
+            /*_logger.LogInformation("Request body: " + body);*/
 
             var request = JsonConvert.DeserializeObject<VerifyVerificationRequest>(body);
             if (request is null || string.IsNullOrWhiteSpace(request.Email))
@@ -30,6 +30,7 @@ public class VerifyCode(ILogger<VerifyCode> logger, VerificationService.Api.Serv
                 return bad;
             }
 
+            // Check if code is valid for given email
             var isValid = await _verificationService.VerifyCodeAsync(request.Email, request.Code);
             var response = req.CreateResponse(HttpStatusCode.OK);
             await response.WriteStringAsync(isValid ? "Code is valid." : "Code is invalid.");

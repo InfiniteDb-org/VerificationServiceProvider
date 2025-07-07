@@ -19,22 +19,13 @@ public class GenerateVerificationCode(ILogger<GenerateVerificationCode> logger, 
         [ServiceBusTrigger("%ASB_VerificationRequestsQueue%", Connection = "ASB_ConnectionString")] ServiceBusReceivedMessage message,
         ServiceBusMessageActions messageActions)
     {
-        _logger.LogInformation("=== GenerateVerificationCode TRIGGERED ===");
-        _logger.LogInformation("Listening on queue: verification-code-requests");
-        _logger.LogInformation("Message ID: {MessageId}", message.MessageId);
-        _logger.LogInformation("Message Body: {MessageBody}", message.Body.ToString());
-        _logger.LogInformation("Will send to queue: {QueueName}", _verificationEmailQueueName);
-        _logger.LogInformation("ASB_VerificationRequestsQueue config: {ConfigValue}", 
-            System.Environment.GetEnvironmentVariable("ASB_VerificationRequestsQueue"));
-        
         try
         {
             var messageBody = message.Body?.ToString();
-            _logger.LogInformation("Processing verification request: {MessageBody}", messageBody);
+            /*_logger.LogInformation("Processing verification request: {MessageBody}", messageBody);*/
 
             if (string.IsNullOrEmpty(messageBody))
             {
-                _logger.LogWarning("Message body is null or empty");
                 await messageActions.AbandonMessageAsync(message);
                 return;
             }
@@ -43,35 +34,22 @@ public class GenerateVerificationCode(ILogger<GenerateVerificationCode> logger, 
             
             if (string.IsNullOrEmpty(evt?.Email))
             {
-                _logger.LogWarning("Invalid request or missing email");
+                /*_logger.LogWarning("Invalid request or missing email");*/
                 await messageActions.AbandonMessageAsync(message);
                 return;
             }
 
-            // Generate verification code (stores in cache)
+            // Generate and store verification code for the email
             var emailRequest = await _verificationService.GenerateVerificationCode(evt.Email);
-            
-            // Extract code from the email request
             var code = emailRequest.Code;
-            _logger.LogInformation("Generated EmailRequest for {Email}: code={Code}", evt.Email, code);
+            /*_logger.LogInformation("Generated EmailRequest for {Email}: code={Code}", evt.Email, code);*/
             
-            // Create event for EmailService with just email + code
-            var verificationCodeSentEvent = new VerificationCodeSentEvent
-            {
-                Email = evt.Email,
-                Code = code
-            };
-            
-            _logger.LogInformation("Sending VerificationCodeSentEvent to verification-code-emails queue: Email={Email}, Code={Code}, EventJson={EventJson}",
-                verificationCodeSentEvent.Email,
-                verificationCodeSentEvent.Code,
-                JsonConvert.SerializeObject(verificationCodeSentEvent));
-            
+            // Send event to email queue with email and code
+            var verificationCodeSentEvent = new VerificationCodeSentEvent {Email = evt.Email, Code = code };
             var sender = _serviceBusClient.CreateSender(_verificationEmailQueueName);
             await sender.SendMessageAsync(new ServiceBusMessage(JsonConvert.SerializeObject(verificationCodeSentEvent)));
 
             await messageActions.CompleteMessageAsync(message);
-            _logger.LogInformation("Successfully sent verification code to verification-code-emails queue for EmailService: {Email}", evt.Email);
         }
         catch (Exception ex)
         {

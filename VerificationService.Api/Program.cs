@@ -26,6 +26,7 @@ var redisConnectionString = builder.Configuration["Redis__Configuration"];
 
 builder.Services.AddSingleton(_ => new EmailClient(acsConnectionString));
 builder.Services.AddSingleton(_ => new ServiceBusClient(asbConnectionString));
+builder.Services.AddSingleton<VerificationService.Api.Services.VerificationService>();
 
 // Add hybrid cache with optional Redis
 builder.Services.AddHybridCache(options =>
@@ -46,6 +47,5 @@ if (!string.IsNullOrEmpty(redisConnectionString))
     });
 }
 
-builder.Services.AddSingleton<VerificationService.Api.Services.VerificationService>();
 
 builder.Build().Run();
